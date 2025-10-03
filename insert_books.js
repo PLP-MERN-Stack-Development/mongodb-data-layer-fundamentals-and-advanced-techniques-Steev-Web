@@ -1,14 +1,24 @@
 // insert_books.js - Script to populate MongoDB with sample book data
 
-// Import MongoDB client
-const { MongoClient } = require('mongodb');
+// const { MongoClient } = require('mongodb');
+// require('dotenv').config();
+// const uri = process.env.MONGOATLAS_URI;
 
-// Connection URI (replace with your MongoDB connection string if using Atlas)
-const uri = 'mongodb://localhost:27017';
 
-// Database and collection names
-const dbName = 'plp_bookstore';
-const collectionName = 'books';
+// const { MongoClient } = require('mongodb');
+// require('dotenv').config();
+// const uri = process.env.MONGOATLAS_URI; 
+
+
+require('dotenv').config();
+const { connectDB, mongoose } = require("./db");
+const Book = require("./model/book");
+
+
+
+// // Database and collection names
+// const dbName = 'plp_bookstore';
+// const collectionName = 'books';
 
 // Sample book data
 const books = [
@@ -134,47 +144,39 @@ const books = [
   }
 ];
 
-// Function to insert books into MongoDB
+
 async function insertBooks() {
-  const client = new MongoClient(uri);
-
   try {
-    // Connect to the MongoDB server
-    await client.connect();
-    console.log('Connected to MongoDB server');
+    await connectDB(); // Only connect once
 
-    // Get database and collection
-    const db = client.db(dbName);
-    const collection = db.collection(collectionName);
-
-    // Check if collection already has documents
-    const count = await collection.countDocuments();
+    const count = await Book.countDocuments();
     if (count > 0) {
-      console.log(`Collection already contains ${count} documents. Dropping collection...`);
-      await collection.drop();
-      console.log('Collection dropped successfully');
+      console.log(`Book collection already contains ${count} documents. Dropping...`);
+      await Book.collection.drop();
+      console.log("Collection dropped.");
     }
 
-    // Insert the books
-    const result = await collection.insertMany(books);
-    console.log(`${result.insertedCount} books were successfully inserted into the database`);
+    const result = await Book.insertMany(books);
+    console.log(`${result.length} books were successfully inserted.`);
 
-    // Display the inserted books
     console.log('\nInserted books:');
-    const insertedBooks = await collection.find({}).toArray();
-    insertedBooks.forEach((book, index) => {
+    result.forEach((book, index) => {
       console.log(`${index + 1}. "${book.title}" by ${book.author} (${book.published_year})`);
     });
 
   } catch (err) {
-    console.error('Error occurred:', err);
+    console.error("Error inserting books:", err);
   } finally {
-    // Close the connection
-    await client.close();
-    console.log('Connection closed');
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+      console.log("Disconnected from MongoDB.");
+    }
   }
 }
 
+insertBooks();
+
+insertBooks();
 // Run the function
 insertBooks().catch(console.error);
 
@@ -196,3 +198,4 @@ insertBooks().catch(console.error);
  * 5. Find in-stock books:
  *    db.books.find({ in_stock: true })
  */ 
+
